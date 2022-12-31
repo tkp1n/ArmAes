@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArmAes", "ArmAes\ArmAes.csproj", "{651ED1DD-166B-4E65-8EE1-DF2280FBAA12}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArmAes.Tests", "ArmAes.Tests\ArmAes.Tests.csproj", "{4E98583D-F11A-4ACF-9EB2-6CBF92CEC6D5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArmAes.Benchmarks", "ArmAes.Benchmarks\ArmAes.Benchmarks.csproj", "{3AE1138C-CB5C-4A9B-96CB-4D2FB91F8D55}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{651ED1DD-166B-4E65-8EE1-DF2280FBAA12}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{651ED1DD-166B-4E65-8EE1-DF2280FBAA12}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{651ED1DD-166B-4E65-8EE1-DF2280FBAA12}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{651ED1DD-166B-4E65-8EE1-DF2280FBAA12}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E98583D-F11A-4ACF-9EB2-6CBF92CEC6D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E98583D-F11A-4ACF-9EB2-6CBF92CEC6D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E98583D-F11A-4ACF-9EB2-6CBF92CEC6D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E98583D-F11A-4ACF-9EB2-6CBF92CEC6D5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3AE1138C-CB5C-4A9B-96CB-4D2FB91F8D55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3AE1138C-CB5C-4A9B-96CB-4D2FB91F8D55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3AE1138C-CB5C-4A9B-96CB-4D2FB91F8D55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3AE1138C-CB5C-4A9B-96CB-4D2FB91F8D55}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
