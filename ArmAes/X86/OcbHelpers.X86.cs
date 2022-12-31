@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -29,16 +30,12 @@ internal static partial class OcbHelpers
             Span<uint> tmp = stackalloc uint[4];
             ref var tmpRef = ref MemoryMarshal.GetReference(tmp);
 
-            if (BitConverter.IsLittleEndian)
-                tmp[0] = (uint)(0x01000000 + ((tagLen * 8 % 128) << 1));
-            else
-                tmp[0] = (uint)(0x00000001 + ((tagLen * 8 % 128) << 25));
+            Unsafe.Add(ref tmpRef, 0) = (uint)(0x01000000 + ((tagLen * 8 % 128) << 1));
+            Unsafe.Add(ref tmpRef, 1) = Unsafe.As<byte, uint>(ref nonce);
+            Unsafe.Add(ref tmpRef, 2) = Unsafe.Add(ref Unsafe.As<byte, uint>(ref nonce), 1);
+            Unsafe.Add(ref tmpRef, 3) = Unsafe.Add(ref Unsafe.As<byte, uint>(ref nonce), 2);
 
-            Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 1) = Unsafe.As<byte, uint>(ref nonce);
-            Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 2) = Unsafe.Add(ref Unsafe.As<byte, uint>(ref nonce), 1);
-            Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 3) = Unsafe.Add(ref Unsafe.As<byte, uint>(ref nonce), 2);
-
-            ref var lastNonceByte = ref Unsafe.AddByteOffset(ref nonce, 11);
+            var lastNonceByte = Unsafe.AddByteOffset(ref nonce, 11);
             var idx = (int)(lastNonceByte & 0x3fu); // Get low 6 bits of nonce
             Unsafe.AddByteOffset(ref Unsafe.As<uint, byte>(ref tmpRef), 15) = (byte)(lastNonceByte & 0xc0);  // Zero low 6 bits of nonce
 
@@ -49,13 +46,16 @@ internal static partial class OcbHelpers
 
             ref var ktopRef = ref MemoryMarshal.GetReference(ktopStr);
             ktop.StoreUnsafe(ref ktopRef);
+
+            ktopRef = BinaryPrimitives.ReverseEndianness(ktopRef);
+            Unsafe.Add(ref ktopRef, 1) = BinaryPrimitives.ReverseEndianness(Unsafe.Add(ref ktopRef, 1));
             Unsafe.Add(ref ktopRef, 2) = ktopRef ^ (ktopRef << 8) ^ (Unsafe.Add(ref ktopRef, 1) >> 56);
 
-            var hi = ktop.AsInt64();
+            var hi = Vector128.LoadUnsafe(ref ktopRef).AsInt64();
             var lo = Vector128.LoadUnsafe(ref ktopRef, 1).AsInt64();
             var lShift = Sse2.ConvertScalarToVector128Int32(idx).AsInt64();
             var rShift =  Sse2.ConvertScalarToVector128Int32(64 - idx).AsInt64();
-            var rValue = lo = Sse2.ShiftLeftLogical(hi, lShift) ^ Sse2.ShiftRightLogical(lo, rShift);
+            var rValue = Sse2.ShiftLeftLogical(hi, lShift) ^ Sse2.ShiftRightLogical(lo, rShift);
 
             if (Ssse3.IsSupported)
             {
@@ -73,16 +73,12 @@ internal static partial class OcbHelpers
             Span<uint> tmp = stackalloc uint[4];
             ref var tmpRef = ref MemoryMarshal.GetReference(tmp);
 
-            if (BitConverter.IsLittleEndian)
-                tmp[0] = (uint)(0x01000000 + ((tagLen * 8 % 128) << 1));
-            else
-                tmp[0] = (uint)(0x00000001 + ((tagLen * 8 % 128) << 25));
+            Unsafe.Add(ref tmpRef, 0) = (uint)(0x01000000 + ((tagLen * 8 % 128) << 1));
+            Unsafe.Add(ref tmpRef, 1) = Unsafe.As<byte, uint>(ref nonce);
+            Unsafe.Add(ref tmpRef, 2) = Unsafe.Add(ref Unsafe.As<byte, uint>(ref nonce), 1);
+            Unsafe.Add(ref tmpRef, 3) = Unsafe.Add(ref Unsafe.As<byte, uint>(ref nonce), 2);
 
-            Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 1) = Unsafe.As<byte, uint>(ref nonce);
-            Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 2) = Unsafe.Add(ref Unsafe.As<byte, uint>(ref nonce), 1);
-            Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 3) = Unsafe.Add(ref Unsafe.As<byte, uint>(ref nonce), 2);
-
-            ref var lastNonceByte = ref Unsafe.AddByteOffset(ref nonce, 11);
+            var lastNonceByte = Unsafe.AddByteOffset(ref nonce, 11);
             var idx = (int)(lastNonceByte & 0x3fu); // Get low 6 bits of nonce
             Unsafe.AddByteOffset(ref Unsafe.As<uint, byte>(ref tmpRef), 15) = (byte)(lastNonceByte & 0xc0);  // Zero low 6 bits of nonce
 
@@ -93,13 +89,16 @@ internal static partial class OcbHelpers
 
             ref var ktopRef = ref MemoryMarshal.GetReference(ktopStr);
             ktop.StoreUnsafe(ref ktopRef);
+
+            ktopRef = BinaryPrimitives.ReverseEndianness(ktopRef);
+            Unsafe.Add(ref ktopRef, 1) = BinaryPrimitives.ReverseEndianness(Unsafe.Add(ref ktopRef, 1));
             Unsafe.Add(ref ktopRef, 2) = ktopRef ^ (ktopRef << 8) ^ (Unsafe.Add(ref ktopRef, 1) >> 56);
 
-            var hi = ktop.AsInt64();
+            var hi = Vector128.LoadUnsafe(ref ktopRef).AsInt64();
             var lo = Vector128.LoadUnsafe(ref ktopRef, 1).AsInt64();
             var lShift = Sse2.ConvertScalarToVector128Int32(idx).AsInt64();
             var rShift =  Sse2.ConvertScalarToVector128Int32(64 - idx).AsInt64();
-            var rValue = lo = Sse2.ShiftLeftLogical(hi, lShift) ^ Sse2.ShiftRightLogical(lo, rShift);
+            var rValue = Sse2.ShiftLeftLogical(hi, lShift) ^ Sse2.ShiftRightLogical(lo, rShift);
 
             if (Ssse3.IsSupported)
             {
@@ -117,16 +116,12 @@ internal static partial class OcbHelpers
             Span<uint> tmp = stackalloc uint[4];
             ref var tmpRef = ref MemoryMarshal.GetReference(tmp);
 
-            if (BitConverter.IsLittleEndian)
-                tmp[0] = (uint)(0x01000000 + ((tagLen * 8 % 128) << 1));
-            else
-                tmp[0] = (uint)(0x00000001 + ((tagLen * 8 % 128) << 25));
+            Unsafe.Add(ref tmpRef, 0) = (uint)(0x01000000 + ((tagLen * 8 % 128) << 1));
+            Unsafe.Add(ref tmpRef, 1) = Unsafe.As<byte, uint>(ref nonce);
+            Unsafe.Add(ref tmpRef, 2) = Unsafe.Add(ref Unsafe.As<byte, uint>(ref nonce), 1);
+            Unsafe.Add(ref tmpRef, 3) = Unsafe.Add(ref Unsafe.As<byte, uint>(ref nonce), 2);
 
-            Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 1) = Unsafe.As<byte, uint>(ref nonce);
-            Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 2) = Unsafe.Add(ref Unsafe.As<byte, uint>(ref nonce), 1);
-            Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 3) = Unsafe.Add(ref Unsafe.As<byte, uint>(ref nonce), 2);
-
-            ref var lastNonceByte = ref Unsafe.AddByteOffset(ref nonce, 11);
+            var lastNonceByte = Unsafe.AddByteOffset(ref nonce, 11);
             var idx = (int)(lastNonceByte & 0x3fu); // Get low 6 bits of nonce
             Unsafe.AddByteOffset(ref Unsafe.As<uint, byte>(ref tmpRef), 15) = (byte)(lastNonceByte & 0xc0);  // Zero low 6 bits of nonce
 
@@ -137,13 +132,16 @@ internal static partial class OcbHelpers
 
             ref var ktopRef = ref MemoryMarshal.GetReference(ktopStr);
             ktop.StoreUnsafe(ref ktopRef);
+
+            ktopRef = BinaryPrimitives.ReverseEndianness(ktopRef);
+            Unsafe.Add(ref ktopRef, 1) = BinaryPrimitives.ReverseEndianness(Unsafe.Add(ref ktopRef, 1));
             Unsafe.Add(ref ktopRef, 2) = ktopRef ^ (ktopRef << 8) ^ (Unsafe.Add(ref ktopRef, 1) >> 56);
 
-            var hi = ktop.AsInt64();
+            var hi = Vector128.LoadUnsafe(ref ktopRef).AsInt64();
             var lo = Vector128.LoadUnsafe(ref ktopRef, 1).AsInt64();
             var lShift = Sse2.ConvertScalarToVector128Int32(idx).AsInt64();
             var rShift =  Sse2.ConvertScalarToVector128Int32(64 - idx).AsInt64();
-            var rValue = lo = Sse2.ShiftLeftLogical(hi, lShift) ^ Sse2.ShiftRightLogical(lo, rShift);
+            var rValue = Sse2.ShiftLeftLogical(hi, lShift) ^ Sse2.ShiftRightLogical(lo, rShift);
 
             if (Ssse3.IsSupported)
             {
