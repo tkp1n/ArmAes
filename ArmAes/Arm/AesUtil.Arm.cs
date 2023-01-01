@@ -13,11 +13,43 @@ internal static partial class AesUtil
             = Vector128.Create((byte)0x04, 0x01, 0x0E, 0x0B, 0x01, 0x0E, 0x0B, 0x04, 0x0C, 0x09, 0x06, 0x03, 0x09, 0x06, 0x03, 0x0C);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<byte> KeygenAssist(Vector128<byte> bytes, byte imm8)
+        private static Vector128<byte> KeygenAssist(Vector128<byte> bytes, byte imm8, byte idx)
+        {
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                var temp = KeygenAssist64(bytes, imm8);
+                return AdvSimd.DuplicateSelectedScalarToVector128(temp.AsInt32(), idx).AsByte();
+            }
+            else
+            {
+                var temp = AdvSimd.DuplicateSelectedScalarToVector128(bytes.AsUInt32(), idx).AsByte();
+                return KeygenAssist32(temp, imm8);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<byte> KeygenAssist2(Vector128<byte> bytes)
+        {
+            var temp = AdvSimd.DuplicateSelectedScalarToVector128(bytes.AsUInt32(), 3).AsByte();
+            return Aes.Encrypt(temp, Vector128<byte>.Zero);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<byte> KeygenAssist64(Vector128<byte> bytes, byte imm8)
         {
             bytes = Aes.Encrypt(bytes, Vector128<byte>.Zero);
             bytes = AdvSimd.Arm64.VectorTableLookup(bytes, KeygenShuffle);
-            return AdvSimd.Xor(bytes.AsUInt32(), Vector128.Create(0u, imm8, 0u, imm8)).AsByte();
+            return AdvSimd.Xor(bytes.AsUInt32(), Vector128.Create<uint>(imm8)).AsByte();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<byte> KeygenAssist32(Vector128<byte> bytes, byte imm8)
+        {
+            bytes = Aes.Encrypt(bytes, Vector128<byte>.Zero);
+            var x3 = bytes.AsUInt32().GetElement(0);
+            x3 = uint.RotateRight(x3, 8);
+            x3 ^= imm8;
+            return Vector128.Create(x3).AsByte();
         }
 
         #region 128
@@ -27,8 +59,7 @@ internal static partial class AesUtil
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<byte> Aes128KeyExp(Vector128<byte> key, byte rcon)
         {
-            var temp = KeygenAssist(key, rcon);
-            temp = AdvSimd.DuplicateSelectedScalarToVector128(temp.AsInt32(), 3).AsByte();
+            var temp = KeygenAssist(key, rcon, 3);
             key = AdvSimd.Xor(key, AdvSimd.ExtractVector128(Vector128<byte>.Zero, key, 12));
             key = AdvSimd.Xor(key, AdvSimd.ExtractVector128(Vector128<byte>.Zero, key, 8));
             return AdvSimd.Xor(key, temp);
@@ -501,11 +532,22 @@ internal static partial class AesUtil
 
         #region KeyGen
 
+        private static Vector128<byte> ZipLow(Vector128<byte> a, Vector128<byte> b)
+        {
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.ZipLow(a.AsUInt64(), b.AsUInt64()).AsByte();
+            }
+            else
+            {
+                return Vector128.Create(a.GetLower(), b.GetLower());
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<byte> Aes192KeyExp(ref Vector128<byte> tmp1, Vector128<byte> tmp3, byte rcon)
         {
-            var tmp2 = KeygenAssist(tmp3, rcon);
-            tmp2 = AdvSimd.DuplicateSelectedScalarToVector128(tmp2.AsInt32(), 1).AsByte();
+            var tmp2 = KeygenAssist(tmp3, rcon, 1);
             tmp1 = AdvSimd.Xor(tmp1, AdvSimd.ExtractVector128(Vector128<byte>.Zero, tmp1, 8));
             tmp1 = AdvSimd.Xor(tmp1, AdvSimd.ExtractVector128(Vector128<byte>.Zero, tmp1, 12));
             tmp1 = AdvSimd.Xor(tmp1, tmp2);
@@ -526,7 +568,7 @@ internal static partial class AesUtil
             // ENC: 1, 2
             var tmp3 = Vector128.Create(Vector64.LoadUnsafe(ref keyRef, 1 * BytesPerRoundKey), Vector64<byte>.Zero);
             var tmp4 = Aes192KeyExp(ref tmp1, tmp3, 0x01);
-            var tmp2 = AdvSimd.Arm64.ZipLow(tmp3.AsUInt64(), tmp1.AsUInt64()).AsByte();
+            var tmp2 = ZipLow(tmp3, tmp1);
             tmp2.StoreUnsafe(ref encKeySchedule, 1 * BytesPerRoundKey);
             tmp2 = AdvSimd.ExtractVector128(tmp1.AsUInt64(), tmp4.AsUInt64(), 1).AsByte();
             tmp2.StoreUnsafe(ref encKeySchedule, 2 * BytesPerRoundKey);
@@ -537,7 +579,7 @@ internal static partial class AesUtil
 
             // ENC: 4, 5
             tmp4 = Aes192KeyExp(ref tmp1, tmp3, 0x04);
-            tmp2 = AdvSimd.Arm64.ZipLow(tmp3.AsUInt64(), tmp1.AsUInt64()).AsByte();
+            tmp2 = ZipLow(tmp3, tmp1);
             tmp2.StoreUnsafe(ref encKeySchedule, 4 * BytesPerRoundKey);
             tmp2 = AdvSimd.ExtractVector128(tmp1.AsUInt64(), tmp4.AsUInt64(), 1).AsByte();
             tmp2.StoreUnsafe(ref encKeySchedule, 5 * BytesPerRoundKey);
@@ -548,7 +590,7 @@ internal static partial class AesUtil
 
             // ENC: 7, 8
             tmp4 = Aes192KeyExp(ref tmp1, tmp3, 0x10);
-            tmp2 = AdvSimd.Arm64.ZipLow(tmp3.AsUInt64(), tmp1.AsUInt64()).AsByte();
+            tmp2 = ZipLow(tmp3, tmp1);
             tmp2.StoreUnsafe(ref encKeySchedule, 7 * BytesPerRoundKey);
             tmp2 = AdvSimd.ExtractVector128(tmp1.AsUInt64(), tmp4.AsUInt64(), 1).AsByte();
             tmp2.StoreUnsafe(ref encKeySchedule, 8 * BytesPerRoundKey);
@@ -559,7 +601,7 @@ internal static partial class AesUtil
 
             // ENC: 10, 11
             tmp4 = Aes192KeyExp(ref tmp1, tmp3, 0x40);
-            tmp2 = AdvSimd.Arm64.ZipLow(tmp3.AsUInt64(), tmp1.AsUInt64()).AsByte();
+            tmp2 = ZipLow(tmp3, tmp1);
             tmp2.StoreUnsafe(ref encKeySchedule, 10 * BytesPerRoundKey);
             tmp2 = AdvSimd.ExtractVector128(tmp1.AsUInt64(), tmp4.AsUInt64(), 1).AsByte();
             tmp2.StoreUnsafe(ref encKeySchedule, 11 * BytesPerRoundKey);
@@ -582,7 +624,7 @@ internal static partial class AesUtil
             // ENC: 1, 2 / DEC: 11, 10
             var tmp3 = Vector128.Create(Vector64.LoadUnsafe(ref keyRef, 1 * BytesPerRoundKey), Vector64<byte>.Zero);
             var tmp4 = Aes192KeyExp(ref tmp1, tmp3, 0x01);
-            var tmp2 = AdvSimd.Arm64.ZipLow(tmp3.AsUInt64(), tmp1.AsUInt64()).AsByte();
+            var tmp2 = ZipLow(tmp3, tmp1);
             tmp2.StoreUnsafe(ref encKeySchedule, 1 * BytesPerRoundKey);
             Aes.InverseMixColumns(tmp2).StoreUnsafe(ref decKeySchedule, 11 * BytesPerRoundKey);
 
@@ -597,7 +639,7 @@ internal static partial class AesUtil
 
             // ENC: 4, 5 / DEC: 8, 7
             tmp4 = Aes192KeyExp(ref tmp1, tmp3, 0x04);
-            tmp2 = AdvSimd.Arm64.ZipLow(tmp3.AsUInt64(), tmp1.AsUInt64()).AsByte();
+            tmp2 = ZipLow(tmp3, tmp1);
             tmp2.StoreUnsafe(ref encKeySchedule, 4 * BytesPerRoundKey);
             Aes.InverseMixColumns(tmp2).StoreUnsafe(ref decKeySchedule, 8 * BytesPerRoundKey);
             tmp2 = AdvSimd.ExtractVector128(tmp1.AsUInt64(), tmp4.AsUInt64(), 1).AsByte();
@@ -611,7 +653,7 @@ internal static partial class AesUtil
 
             // ENC: 7, 8 / DEC: 5, 4
             tmp4 = Aes192KeyExp(ref tmp1, tmp3, 0x10);
-            tmp2 = AdvSimd.Arm64.ZipLow(tmp3.AsUInt64(), tmp1.AsUInt64()).AsByte();
+            tmp2 = ZipLow(tmp3, tmp1);
             tmp2.StoreUnsafe(ref encKeySchedule, 7 * BytesPerRoundKey);
             Aes.InverseMixColumns(tmp2).StoreUnsafe(ref decKeySchedule, 5 * BytesPerRoundKey);
             tmp2 = AdvSimd.ExtractVector128(tmp1.AsUInt64(), tmp4.AsUInt64(), 1).AsByte();
@@ -625,7 +667,7 @@ internal static partial class AesUtil
 
             // ENC: 10, 11 / DEC: 2, 1
             tmp4 = Aes192KeyExp(ref tmp1, tmp3, 0x40);
-            tmp2 = AdvSimd.Arm64.ZipLow(tmp3.AsUInt64(), tmp1.AsUInt64()).AsByte();
+            tmp2 = ZipLow(tmp3, tmp1);
             tmp2.StoreUnsafe(ref encKeySchedule, 10 * BytesPerRoundKey);
             Aes.InverseMixColumns(tmp2).StoreUnsafe(ref decKeySchedule, 2 * BytesPerRoundKey);
             tmp2 = AdvSimd.ExtractVector128(tmp1.AsUInt64(), tmp4.AsUInt64(), 1).AsByte();
@@ -650,7 +692,7 @@ internal static partial class AesUtil
             // DEC: 10, 11
             var tmp3 = Vector128.Create(Vector64.LoadUnsafe(ref keyRef, 1 * BytesPerRoundKey), Vector64<byte>.Zero);
             var tmp4 = Aes192KeyExp(ref tmp1, tmp3, 0x01);
-            var tmp2 = AdvSimd.Arm64.ZipLow(tmp3.AsUInt64(), tmp1.AsUInt64()).AsByte();
+            var tmp2 = ZipLow(tmp3, tmp1);
             Aes.InverseMixColumns(tmp2).StoreUnsafe(ref decKeySchedule, 11 * BytesPerRoundKey);
             tmp2 = AdvSimd.ExtractVector128(tmp1.AsUInt64(), tmp4.AsUInt64(), 1).AsByte();
             Aes.InverseMixColumns(tmp2).StoreUnsafe(ref decKeySchedule, 10 * BytesPerRoundKey);
@@ -661,7 +703,7 @@ internal static partial class AesUtil
 
             // DEC: 7, 8
             tmp4 = Aes192KeyExp(ref tmp1, tmp3, 0x04);
-            tmp2 = AdvSimd.Arm64.ZipLow(tmp3.AsUInt64(), tmp1.AsUInt64()).AsByte();
+            tmp2 = ZipLow(tmp3, tmp1);
             Aes.InverseMixColumns(tmp2).StoreUnsafe(ref decKeySchedule, 8 * BytesPerRoundKey);
             tmp2 = AdvSimd.ExtractVector128(tmp1.AsUInt64(), tmp4.AsUInt64(), 1).AsByte();
             Aes.InverseMixColumns(tmp2).StoreUnsafe(ref decKeySchedule, 7 * BytesPerRoundKey);
@@ -672,7 +714,7 @@ internal static partial class AesUtil
 
             // DEC: 4, 5
             tmp4 = Aes192KeyExp(ref tmp1, tmp3, 0x10);
-            tmp2 = AdvSimd.Arm64.ZipLow(tmp3.AsUInt64(), tmp1.AsUInt64()).AsByte();
+            tmp2 = ZipLow(tmp3, tmp1);
             Aes.InverseMixColumns(tmp2).StoreUnsafe(ref decKeySchedule, 5 * BytesPerRoundKey);
             tmp2 = AdvSimd.ExtractVector128(tmp1.AsUInt64(), tmp4.AsUInt64(), 1).AsByte();
             Aes.InverseMixColumns(tmp2).StoreUnsafe(ref decKeySchedule, 4 * BytesPerRoundKey);
@@ -683,7 +725,7 @@ internal static partial class AesUtil
 
             // DEC: 1, 2
             tmp4 = Aes192KeyExp(ref tmp1, tmp3, 0x40);
-            tmp2 = AdvSimd.Arm64.ZipLow(tmp3.AsUInt64(), tmp1.AsUInt64()).AsByte();
+            tmp2 = ZipLow(tmp3, tmp1);
             Aes.InverseMixColumns(tmp2).StoreUnsafe(ref decKeySchedule, 2 * BytesPerRoundKey);
             tmp2 = AdvSimd.ExtractVector128(tmp1.AsUInt64(), tmp4.AsUInt64(), 1).AsByte();
             Aes.InverseMixColumns(tmp2).StoreUnsafe(ref decKeySchedule, 1 * BytesPerRoundKey);
@@ -1054,8 +1096,7 @@ internal static partial class AesUtil
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Aes256KeyExp1(ref Vector128<byte> key, Vector128<byte> input, byte rcon)
         {
-            var temp = KeygenAssist(input, rcon);
-            temp = AdvSimd.DuplicateSelectedScalarToVector128(temp.AsInt32(), 3).AsByte(); //  Sse2.Shuffle(temp.AsInt32(), 0xAA).AsByte();
+            var temp = KeygenAssist(input, rcon, 3);
             key = AdvSimd.Xor(key, AdvSimd.ExtractVector128(AdvSimd.DuplicateToVector128((byte)0), key, 12));
             key = AdvSimd.Xor(key, AdvSimd.ExtractVector128(AdvSimd.DuplicateToVector128((byte)0), key, 8));
             key = AdvSimd.Xor(key, temp);
@@ -1064,9 +1105,7 @@ internal static partial class AesUtil
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Aes256KeyExp2(ref Vector128<byte> key, Vector128<byte> input)
         {
-            var temp = Aes.Encrypt(input, Vector128<byte>.Zero);
-            temp = AdvSimd.Arm64.VectorTableLookup(temp, KeygenShuffle);
-            temp = AdvSimd.DuplicateSelectedScalarToVector128(temp.AsInt32(), 2).AsByte(); //  Sse2.Shuffle(temp.AsInt32(), 0xFF).AsByte();
+            var temp = KeygenAssist2(input);
             key = AdvSimd.Xor(key, AdvSimd.ExtractVector128(Vector128<byte>.Zero, key, 12));
             key = AdvSimd.Xor(key, AdvSimd.ExtractVector128(Vector128<byte>.Zero, key, 8));
             key = AdvSimd.Xor(key, temp);

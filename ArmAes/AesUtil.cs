@@ -13,7 +13,7 @@ internal static partial class AesUtil
 
     public static void EncKeygen128(ReadOnlySpan<byte> key, ref byte keySchedule)
     {
-        if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported &&
+        if (System.Runtime.Intrinsics.Arm.AdvSimd.IsSupported &&
             System.Runtime.Intrinsics.Arm.Aes.IsSupported)
         {
             Arm.EncKeygen128(key, ref keySchedule);
@@ -30,7 +30,7 @@ internal static partial class AesUtil
 
     public static void EncDecKeygen128(ReadOnlySpan<byte> key, ref byte encKeySchedule, ref byte decKeySchedule)
     {
-        if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported &&
+        if (System.Runtime.Intrinsics.Arm.AdvSimd.IsSupported &&
             System.Runtime.Intrinsics.Arm.Aes.IsSupported)
         {
             Arm.EncDecKeygen128(key, ref encKeySchedule, ref decKeySchedule);
@@ -47,7 +47,7 @@ internal static partial class AesUtil
 
     public static void DecKeygen128(ReadOnlySpan<byte> key, ref byte decKeySchedule)
     {
-        if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported &&
+        if (System.Runtime.Intrinsics.Arm.AdvSimd.IsSupported &&
             System.Runtime.Intrinsics.Arm.Aes.IsSupported)
         {
             Arm.DecKeygen128(key, ref decKeySchedule);
@@ -132,7 +132,7 @@ internal static partial class AesUtil
 
     public static void EncKeygen192(ReadOnlySpan<byte> key, ref byte keySchedule)
     {
-        if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported &&
+        if (System.Runtime.Intrinsics.Arm.AdvSimd.IsSupported &&
             System.Runtime.Intrinsics.Arm.Aes.IsSupported)
         {
             Arm.EncKeygen192(key, ref keySchedule);
@@ -149,7 +149,7 @@ internal static partial class AesUtil
 
     public static void EncDecKeygen192(ReadOnlySpan<byte> key, ref byte encKeySchedule, ref byte decKeySchedule)
     {
-        if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported &&
+        if (System.Runtime.Intrinsics.Arm.AdvSimd.IsSupported &&
             System.Runtime.Intrinsics.Arm.Aes.IsSupported)
         {
             Arm.EncDecKeygen192(key, ref encKeySchedule, ref decKeySchedule);
@@ -166,7 +166,7 @@ internal static partial class AesUtil
 
     public static void DecKeygen192(ReadOnlySpan<byte> key, ref byte decKeySchedule)
     {
-        if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported &&
+        if (System.Runtime.Intrinsics.Arm.AdvSimd.IsSupported &&
             System.Runtime.Intrinsics.Arm.Aes.IsSupported)
         {
             Arm.DecKeygen192(key, ref decKeySchedule);
@@ -251,7 +251,7 @@ internal static partial class AesUtil
 
     public static void EncKeygen256(ReadOnlySpan<byte> key, ref byte keySchedule)
     {
-        if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported &&
+        if (System.Runtime.Intrinsics.Arm.AdvSimd.IsSupported &&
             System.Runtime.Intrinsics.Arm.Aes.IsSupported)
         {
             Arm.EncKeygen256(key, ref keySchedule);
@@ -268,7 +268,7 @@ internal static partial class AesUtil
 
     public static void EncDecKeygen256(ReadOnlySpan<byte> key, ref byte encKeySchedule, ref byte decKeySchedule)
     {
-        if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported &&
+        if (System.Runtime.Intrinsics.Arm.AdvSimd.IsSupported &&
             System.Runtime.Intrinsics.Arm.Aes.IsSupported)
         {
             Arm.EncDecKeygen256(key, ref encKeySchedule, ref decKeySchedule);
@@ -285,7 +285,7 @@ internal static partial class AesUtil
 
     public static void DecKeygen256(ReadOnlySpan<byte> key, ref byte decKeySchedule)
     {
-        if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported &&
+        if (System.Runtime.Intrinsics.Arm.AdvSimd.IsSupported &&
             System.Runtime.Intrinsics.Arm.Aes.IsSupported)
         {
             Arm.DecKeygen256(key, ref decKeySchedule);
