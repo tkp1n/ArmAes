@@ -25,6 +25,16 @@ internal static partial class AesUtil
         #region KeyGen
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<byte> Aes128KeyExp(Vector128<byte> key, byte rcon)
+        {
+            var temp = KeygenAssist(key, rcon);
+            temp = AdvSimd.DuplicateSelectedScalarToVector128(temp.AsInt32(), 3).AsByte();
+            key = AdvSimd.Xor(key, AdvSimd.ExtractVector128(Vector128<byte>.Zero, key, 12));
+            key = AdvSimd.Xor(key, AdvSimd.ExtractVector128(Vector128<byte>.Zero, key, 8));
+            return AdvSimd.Xor(key, temp);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void EncKeygen128(ReadOnlySpan<byte> key, ref byte encKeySchedule)
         {
             ref var keyRef = ref MemoryMarshal.GetReference(key);
@@ -188,16 +198,6 @@ internal static partial class AesUtil
         #endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<byte> Aes128KeyExp(Vector128<byte> key, byte rcon)
-        {
-            var temp = KeygenAssist(key, rcon);
-            temp = AdvSimd.DuplicateSelectedScalarToVector128(temp.AsInt32(), 3).AsByte();
-            key = AdvSimd.Xor(key, AdvSimd.ExtractVector128(Vector128<byte>.Zero, key, 12));
-            key = AdvSimd.Xor(key, AdvSimd.ExtractVector128(Vector128<byte>.Zero, key, 8));
-            return AdvSimd.Xor(key, temp);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Encrypt128(
             ref Vector128<byte> ta0,
             ref Vector128<byte> ta1,
@@ -218,104 +218,109 @@ internal static partial class AesUtil
             var key10 = Vector128.LoadUnsafe(ref keySchedule, BytesPerRoundKey * 10);
 
             // ROUND 0
-            ta0 = Aes.Encrypt(ta0, key0);
-            ta1 = Aes.Encrypt(ta1, key0);
-            ta2 = Aes.Encrypt(ta2, key0);
-            ta3 = Aes.Encrypt(ta3, key0);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            var block0 = Aes.Encrypt(ta0, key0);
+            block0 = Aes.MixColumns(block0);
+            var block1 = Aes.Encrypt(ta1, key0);
+            block1 = Aes.MixColumns(block1);
+            var block2 = Aes.Encrypt(ta2, key0);
+            block2 = Aes.MixColumns(block2);
+            var block3 = Aes.Encrypt(ta3, key0);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 1
-            ta0 = Aes.Encrypt(ta0, key1);
-            ta1 = Aes.Encrypt(ta1, key1);
-            ta2 = Aes.Encrypt(ta2, key1);
-            ta3 = Aes.Encrypt(ta3, key1);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key1);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key1);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key1);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key1);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 2
-            ta0 = Aes.Encrypt(ta0, key2);
-            ta1 = Aes.Encrypt(ta1, key2);
-            ta2 = Aes.Encrypt(ta2, key2);
-            ta3 = Aes.Encrypt(ta3, key2);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key2);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key2);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key2);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key2);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 3
-            ta0 = Aes.Encrypt(ta0, key3);
-            ta1 = Aes.Encrypt(ta1, key3);
-            ta2 = Aes.Encrypt(ta2, key3);
-            ta3 = Aes.Encrypt(ta3, key3);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key3);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key3);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key3);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key3);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 4
-            ta0 = Aes.Encrypt(ta0, key4);
-            ta1 = Aes.Encrypt(ta1, key4);
-            ta2 = Aes.Encrypt(ta2, key4);
-            ta3 = Aes.Encrypt(ta3, key4);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key4);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key4);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key4);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key4);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 5
-            ta0 = Aes.Encrypt(ta0, key5);
-            ta1 = Aes.Encrypt(ta1, key5);
-            ta2 = Aes.Encrypt(ta2, key5);
-            ta3 = Aes.Encrypt(ta3, key5);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key5);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key5);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key5);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key5);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 6
-            ta0 = Aes.Encrypt(ta0, key6);
-            ta1 = Aes.Encrypt(ta1, key6);
-            ta2 = Aes.Encrypt(ta2, key6);
-            ta3 = Aes.Encrypt(ta3, key6);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key6);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key6);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key6);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key6);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 7
-            ta0 = Aes.Encrypt(ta0, key7);
-            ta1 = Aes.Encrypt(ta1, key7);
-            ta2 = Aes.Encrypt(ta2, key7);
-            ta3 = Aes.Encrypt(ta3, key7);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key7);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key7);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key7);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key7);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 8
-            ta0 = Aes.Encrypt(ta0, key8);
-            ta1 = Aes.Encrypt(ta1, key8);
-            ta2 = Aes.Encrypt(ta2, key8);
-            ta3 = Aes.Encrypt(ta3, key8);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key8);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key8);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key8);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key8);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 9 + 10
-            ta0 = Aes.Encrypt(ta0, key9);
-            ta1 = Aes.Encrypt(ta1, key9);
-            ta2 = Aes.Encrypt(ta2, key9);
-            ta3 = Aes.Encrypt(ta3, key9);
-            ta0 ^= key10;
-            ta1 ^= key10;
-            ta2 ^= key10;
-            ta3 ^= key10;
+            block0 = Aes.Encrypt(block0, key9);
+            block0 ^= key10;
+            block1 = Aes.Encrypt(block1, key9);
+            block1 ^= key10;
+            block2 = Aes.Encrypt(block2, key9);
+            block2 ^= key10;
+            block3 = Aes.Encrypt(block3, key9);
+            block3 ^= key10;
+
+            ta0 = block0;
+            ta1 = block1;
+            ta2 = block2;
+            ta3 = block3;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -385,104 +390,109 @@ internal static partial class AesUtil
             var key10 = Vector128.LoadUnsafe(ref keySchedule, BytesPerRoundKey * 10);
 
             // ROUND 0
-            ta0 = Aes.Decrypt(ta0, key0);
-            ta1 = Aes.Decrypt(ta1, key0);
-            ta2 = Aes.Decrypt(ta2, key0);
-            ta3 = Aes.Decrypt(ta3, key0);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            var block0 = Aes.Decrypt(ta0, key0);
+            block0 = Aes.InverseMixColumns(block0);
+            var block1 = Aes.Decrypt(ta1, key0);
+            block1 = Aes.InverseMixColumns(block1);
+            var block2 = Aes.Decrypt(ta2, key0);
+            block2 = Aes.InverseMixColumns(block2);
+            var block3 = Aes.Decrypt(ta3, key0);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 1
-            ta0 = Aes.Decrypt(ta0, key1);
-            ta1 = Aes.Decrypt(ta1, key1);
-            ta2 = Aes.Decrypt(ta2, key1);
-            ta3 = Aes.Decrypt(ta3, key1);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key1);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key1);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key1);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key1);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 2
-            ta0 = Aes.Decrypt(ta0, key2);
-            ta1 = Aes.Decrypt(ta1, key2);
-            ta2 = Aes.Decrypt(ta2, key2);
-            ta3 = Aes.Decrypt(ta3, key2);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key2);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key2);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key2);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key2);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 3
-            ta0 = Aes.Decrypt(ta0, key3);
-            ta1 = Aes.Decrypt(ta1, key3);
-            ta2 = Aes.Decrypt(ta2, key3);
-            ta3 = Aes.Decrypt(ta3, key3);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key3);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key3);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key3);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key3);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 4
-            ta0 = Aes.Decrypt(ta0, key4);
-            ta1 = Aes.Decrypt(ta1, key4);
-            ta2 = Aes.Decrypt(ta2, key4);
-            ta3 = Aes.Decrypt(ta3, key4);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key4);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key4);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key4);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key4);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 5
-            ta0 = Aes.Decrypt(ta0, key5);
-            ta1 = Aes.Decrypt(ta1, key5);
-            ta2 = Aes.Decrypt(ta2, key5);
-            ta3 = Aes.Decrypt(ta3, key5);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key5);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key5);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key5);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key5);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 6
-            ta0 = Aes.Decrypt(ta0, key6);
-            ta1 = Aes.Decrypt(ta1, key6);
-            ta2 = Aes.Decrypt(ta2, key6);
-            ta3 = Aes.Decrypt(ta3, key6);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key6);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key6);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key6);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key6);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 7
-            ta0 = Aes.Decrypt(ta0, key7);
-            ta1 = Aes.Decrypt(ta1, key7);
-            ta2 = Aes.Decrypt(ta2, key7);
-            ta3 = Aes.Decrypt(ta3, key7);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key7);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key7);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key7);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key7);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 8
-            ta0 = Aes.Decrypt(ta0, key8);
-            ta1 = Aes.Decrypt(ta1, key8);
-            ta2 = Aes.Decrypt(ta2, key8);
-            ta3 = Aes.Decrypt(ta3, key8);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key8);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key8);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key8);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key8);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 9 + 10
-            ta0 = Aes.Decrypt(ta0, key9);
-            ta1 = Aes.Decrypt(ta1, key9);
-            ta2 = Aes.Decrypt(ta2, key9);
-            ta3 = Aes.Decrypt(ta3, key9);
-            ta0 ^= key10;
-            ta1 ^= key10;
-            ta2 ^= key10;
-            ta3 ^= key10;
+            block0 = Aes.Decrypt(block0, key9);
+            block0 ^= key10;
+            block1 = Aes.Decrypt(block1, key9);
+            block1 ^= key10;
+            block2 = Aes.Decrypt(block2, key9);
+            block2 ^= key10;
+            block3 = Aes.Decrypt(block3, key9);
+            block3 ^= key10;
+
+            ta0 = block0;
+            ta1 = block1;
+            ta2 = block2;
+            ta3 = block3;
         }
 
         #endregion
@@ -708,124 +718,129 @@ internal static partial class AesUtil
             var key12 = Vector128.LoadUnsafe(ref keySchedule, BytesPerRoundKey * 12);
 
             // ROUND 0
-            ta0 = Aes.Encrypt(ta0, key0);
-            ta1 = Aes.Encrypt(ta1, key0);
-            ta2 = Aes.Encrypt(ta2, key0);
-            ta3 = Aes.Encrypt(ta3, key0);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            var block0 = Aes.Encrypt(ta0, key0);
+            block0 = Aes.MixColumns(block0);
+            var block1 = Aes.Encrypt(ta1, key0);
+            block1 = Aes.MixColumns(block1);
+            var block2 = Aes.Encrypt(ta2, key0);
+            block2 = Aes.MixColumns(block2);
+            var block3 = Aes.Encrypt(ta3, key0);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 1
-            ta0 = Aes.Encrypt(ta0, key1);
-            ta1 = Aes.Encrypt(ta1, key1);
-            ta2 = Aes.Encrypt(ta2, key1);
-            ta3 = Aes.Encrypt(ta3, key1);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key1);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key1);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key1);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key1);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 2
-            ta0 = Aes.Encrypt(ta0, key2);
-            ta1 = Aes.Encrypt(ta1, key2);
-            ta2 = Aes.Encrypt(ta2, key2);
-            ta3 = Aes.Encrypt(ta3, key2);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key2);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key2);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key2);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key2);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 3
-            ta0 = Aes.Encrypt(ta0, key3);
-            ta1 = Aes.Encrypt(ta1, key3);
-            ta2 = Aes.Encrypt(ta2, key3);
-            ta3 = Aes.Encrypt(ta3, key3);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key3);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key3);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key3);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key3);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 4
-            ta0 = Aes.Encrypt(ta0, key4);
-            ta1 = Aes.Encrypt(ta1, key4);
-            ta2 = Aes.Encrypt(ta2, key4);
-            ta3 = Aes.Encrypt(ta3, key4);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key4);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key4);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key4);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key4);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 5
-            ta0 = Aes.Encrypt(ta0, key5);
-            ta1 = Aes.Encrypt(ta1, key5);
-            ta2 = Aes.Encrypt(ta2, key5);
-            ta3 = Aes.Encrypt(ta3, key5);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key5);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key5);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key5);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key5);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 6
-            ta0 = Aes.Encrypt(ta0, key6);
-            ta1 = Aes.Encrypt(ta1, key6);
-            ta2 = Aes.Encrypt(ta2, key6);
-            ta3 = Aes.Encrypt(ta3, key6);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key6);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key6);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key6);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key6);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 7
-            ta0 = Aes.Encrypt(ta0, key7);
-            ta1 = Aes.Encrypt(ta1, key7);
-            ta2 = Aes.Encrypt(ta2, key7);
-            ta3 = Aes.Encrypt(ta3, key7);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key7);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key7);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key7);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key7);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 8
-            ta0 = Aes.Encrypt(ta0, key8);
-            ta1 = Aes.Encrypt(ta1, key8);
-            ta2 = Aes.Encrypt(ta2, key8);
-            ta3 = Aes.Encrypt(ta3, key8);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key8);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key8);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key8);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key8);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 9
-            ta0 = Aes.Encrypt(ta0, key9);
-            ta1 = Aes.Encrypt(ta1, key9);
-            ta2 = Aes.Encrypt(ta2, key9);
-            ta3 = Aes.Encrypt(ta3, key9);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key9);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key9);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key9);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key9);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 10
-            ta0 = Aes.Encrypt(ta0, key10);
-            ta1 = Aes.Encrypt(ta1, key10);
-            ta2 = Aes.Encrypt(ta2, key10);
-            ta3 = Aes.Encrypt(ta3, key10);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key10);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key10);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key10);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key10);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 11 + 12
-            ta0 = Aes.Encrypt(ta0, key11);
-            ta1 = Aes.Encrypt(ta1, key11);
-            ta2 = Aes.Encrypt(ta2, key11);
-            ta3 = Aes.Encrypt(ta3, key11);
-            ta0 ^= key12;
-            ta1 ^= key12;
-            ta2 ^= key12;
-            ta3 ^= key12;
+            block0 = Aes.Encrypt(block0, key11);
+            block0 ^= key12;
+            block1 = Aes.Encrypt(block1, key11);
+            block1 ^= key12;
+            block2 = Aes.Encrypt(block2, key11);
+            block2 ^= key12;
+            block3 = Aes.Encrypt(block3, key11);
+            block3 ^= key12;
+
+            ta0 = block0;
+            ta1 = block1;
+            ta2 = block2;
+            ta3 = block3;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -905,124 +920,129 @@ internal static partial class AesUtil
             var key12 = Vector128.LoadUnsafe(ref keySchedule, BytesPerRoundKey * 12);
 
             // ROUND 0
-            ta0 = Aes.Decrypt(ta0, key0);
-            ta1 = Aes.Decrypt(ta1, key0);
-            ta2 = Aes.Decrypt(ta2, key0);
-            ta3 = Aes.Decrypt(ta3, key0);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            var block0 = Aes.Decrypt(ta0, key0);
+            block0 = Aes.InverseMixColumns(block0);
+            var block1 = Aes.Decrypt(ta1, key0);
+            block1 = Aes.InverseMixColumns(block1);
+            var block2 = Aes.Decrypt(ta2, key0);
+            block2 = Aes.InverseMixColumns(block2);
+            var block3 = Aes.Decrypt(ta3, key0);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 1
-            ta0 = Aes.Decrypt(ta0, key1);
-            ta1 = Aes.Decrypt(ta1, key1);
-            ta2 = Aes.Decrypt(ta2, key1);
-            ta3 = Aes.Decrypt(ta3, key1);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key1);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key1);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key1);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key1);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 2
-            ta0 = Aes.Decrypt(ta0, key2);
-            ta1 = Aes.Decrypt(ta1, key2);
-            ta2 = Aes.Decrypt(ta2, key2);
-            ta3 = Aes.Decrypt(ta3, key2);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key2);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key2);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key2);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key2);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 3
-            ta0 = Aes.Decrypt(ta0, key3);
-            ta1 = Aes.Decrypt(ta1, key3);
-            ta2 = Aes.Decrypt(ta2, key3);
-            ta3 = Aes.Decrypt(ta3, key3);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key3);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key3);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key3);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key3);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 4
-            ta0 = Aes.Decrypt(ta0, key4);
-            ta1 = Aes.Decrypt(ta1, key4);
-            ta2 = Aes.Decrypt(ta2, key4);
-            ta3 = Aes.Decrypt(ta3, key4);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key4);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key4);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key4);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key4);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 5
-            ta0 = Aes.Decrypt(ta0, key5);
-            ta1 = Aes.Decrypt(ta1, key5);
-            ta2 = Aes.Decrypt(ta2, key5);
-            ta3 = Aes.Decrypt(ta3, key5);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key5);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key5);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key5);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key5);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 6
-            ta0 = Aes.Decrypt(ta0, key6);
-            ta1 = Aes.Decrypt(ta1, key6);
-            ta2 = Aes.Decrypt(ta2, key6);
-            ta3 = Aes.Decrypt(ta3, key6);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key6);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key6);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key6);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key6);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 7
-            ta0 = Aes.Decrypt(ta0, key7);
-            ta1 = Aes.Decrypt(ta1, key7);
-            ta2 = Aes.Decrypt(ta2, key7);
-            ta3 = Aes.Decrypt(ta3, key7);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key7);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key7);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key7);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key7);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 8
-            ta0 = Aes.Decrypt(ta0, key8);
-            ta1 = Aes.Decrypt(ta1, key8);
-            ta2 = Aes.Decrypt(ta2, key8);
-            ta3 = Aes.Decrypt(ta3, key8);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key8);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key8);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key8);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key8);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 9
-            ta0 = Aes.Decrypt(ta0, key9);
-            ta1 = Aes.Decrypt(ta1, key9);
-            ta2 = Aes.Decrypt(ta2, key9);
-            ta3 = Aes.Decrypt(ta3, key9);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key9);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key9);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key9);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key9);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 10
-            ta0 = Aes.Decrypt(ta0, key10);
-            ta1 = Aes.Decrypt(ta1, key10);
-            ta2 = Aes.Decrypt(ta2, key10);
-            ta3 = Aes.Decrypt(ta3, key10);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key10);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key10);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key10);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key10);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 11 + 12
-            ta0 = Aes.Decrypt(ta0, key11);
-            ta1 = Aes.Decrypt(ta1, key11);
-            ta2 = Aes.Decrypt(ta2, key11);
-            ta3 = Aes.Decrypt(ta3, key11);
-            ta0 ^= key12;
-            ta1 ^= key12;
-            ta2 ^= key12;
-            ta3 ^= key12;
+            block0 = Aes.Decrypt(block0, key11);
+            block0 ^= key12;
+            block1 = Aes.Decrypt(block1, key11);
+            block1 ^= key12;
+            block2 = Aes.Decrypt(block2, key11);
+            block2 ^= key12;
+            block3 = Aes.Decrypt(block3, key11);
+            block3 ^= key12;
+
+            ta0 = block0;
+            ta1 = block1;
+            ta2 = block2;
+            ta3 = block3;
         }
 
         #endregion
@@ -1291,144 +1311,149 @@ internal static partial class AesUtil
             var key14 = Vector128.LoadUnsafe(ref keySchedule, BytesPerRoundKey * 14);
 
             // ROUND 0
-            ta0 = Aes.Encrypt(ta0, key0);
-            ta1 = Aes.Encrypt(ta1, key0);
-            ta2 = Aes.Encrypt(ta2, key0);
-            ta3 = Aes.Encrypt(ta3, key0);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            var block0 = Aes.Encrypt(ta0, key0);
+            block0 = Aes.MixColumns(block0);
+            var block1 = Aes.Encrypt(ta1, key0);
+            block1 = Aes.MixColumns(block1);
+            var block2 = Aes.Encrypt(ta2, key0);
+            block2 = Aes.MixColumns(block2);
+            var block3 = Aes.Encrypt(ta3, key0);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 1
-            ta0 = Aes.Encrypt(ta0, key1);
-            ta1 = Aes.Encrypt(ta1, key1);
-            ta2 = Aes.Encrypt(ta2, key1);
-            ta3 = Aes.Encrypt(ta3, key1);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key1);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key1);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key1);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key1);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 2
-            ta0 = Aes.Encrypt(ta0, key2);
-            ta1 = Aes.Encrypt(ta1, key2);
-            ta2 = Aes.Encrypt(ta2, key2);
-            ta3 = Aes.Encrypt(ta3, key2);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key2);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key2);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key2);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key2);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 3
-            ta0 = Aes.Encrypt(ta0, key3);
-            ta1 = Aes.Encrypt(ta1, key3);
-            ta2 = Aes.Encrypt(ta2, key3);
-            ta3 = Aes.Encrypt(ta3, key3);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key3);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key3);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key3);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key3);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 4
-            ta0 = Aes.Encrypt(ta0, key4);
-            ta1 = Aes.Encrypt(ta1, key4);
-            ta2 = Aes.Encrypt(ta2, key4);
-            ta3 = Aes.Encrypt(ta3, key4);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key4);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key4);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key4);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key4);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 5
-            ta0 = Aes.Encrypt(ta0, key5);
-            ta1 = Aes.Encrypt(ta1, key5);
-            ta2 = Aes.Encrypt(ta2, key5);
-            ta3 = Aes.Encrypt(ta3, key5);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key5);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key5);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key5);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key5);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 6
-            ta0 = Aes.Encrypt(ta0, key6);
-            ta1 = Aes.Encrypt(ta1, key6);
-            ta2 = Aes.Encrypt(ta2, key6);
-            ta3 = Aes.Encrypt(ta3, key6);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key6);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key6);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key6);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key6);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 7
-            ta0 = Aes.Encrypt(ta0, key7);
-            ta1 = Aes.Encrypt(ta1, key7);
-            ta2 = Aes.Encrypt(ta2, key7);
-            ta3 = Aes.Encrypt(ta3, key7);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key7);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key7);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key7);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key7);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 8
-            ta0 = Aes.Encrypt(ta0, key8);
-            ta1 = Aes.Encrypt(ta1, key8);
-            ta2 = Aes.Encrypt(ta2, key8);
-            ta3 = Aes.Encrypt(ta3, key8);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key8);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key8);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key8);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key8);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 9
-            ta0 = Aes.Encrypt(ta0, key9);
-            ta1 = Aes.Encrypt(ta1, key9);
-            ta2 = Aes.Encrypt(ta2, key9);
-            ta3 = Aes.Encrypt(ta3, key9);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key9);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key9);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key9);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key9);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 10
-            ta0 = Aes.Encrypt(ta0, key10);
-            ta1 = Aes.Encrypt(ta1, key10);
-            ta2 = Aes.Encrypt(ta2, key10);
-            ta3 = Aes.Encrypt(ta3, key10);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key10);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key10);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key10);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key10);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 11
-            ta0 = Aes.Encrypt(ta0, key11);
-            ta1 = Aes.Encrypt(ta1, key11);
-            ta2 = Aes.Encrypt(ta2, key11);
-            ta3 = Aes.Encrypt(ta3, key11);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key11);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key11);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key11);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key11);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 12
-            ta0 = Aes.Encrypt(ta0, key12);
-            ta1 = Aes.Encrypt(ta1, key12);
-            ta2 = Aes.Encrypt(ta2, key12);
-            ta3 = Aes.Encrypt(ta3, key12);
-            ta0 = Aes.MixColumns(ta0);
-            ta1 = Aes.MixColumns(ta1);
-            ta2 = Aes.MixColumns(ta2);
-            ta3 = Aes.MixColumns(ta3);
+            block0 = Aes.Encrypt(block0, key12);
+            block0 = Aes.MixColumns(block0);
+            block1 = Aes.Encrypt(block1, key12);
+            block1 = Aes.MixColumns(block1);
+            block2 = Aes.Encrypt(block2, key12);
+            block2 = Aes.MixColumns(block2);
+            block3 = Aes.Encrypt(block3, key12);
+            block3 = Aes.MixColumns(block3);
 
             // ROUND 13 + 14
-            ta0 = Aes.Encrypt(ta0, key13);
-            ta1 = Aes.Encrypt(ta1, key13);
-            ta2 = Aes.Encrypt(ta2, key13);
-            ta3 = Aes.Encrypt(ta3, key13);
-            ta0 ^= key14;
-            ta1 ^= key14;
-            ta2 ^= key14;
-            ta3 ^= key14;
+            block0 = Aes.Encrypt(block0, key13);
+            block0 ^= key14;
+            block1 = Aes.Encrypt(block1, key13);
+            block1 ^= key14;
+            block2 = Aes.Encrypt(block2, key13);
+            block2 ^= key14;
+            block3 = Aes.Encrypt(block3, key13);
+            block3 ^= key14;
+
+            ta0 = block0;
+            ta1 = block1;
+            ta2 = block2;
+            ta3 = block3;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1518,144 +1543,149 @@ internal static partial class AesUtil
             var key14 = Vector128.LoadUnsafe(ref keySchedule, BytesPerRoundKey * 14);
 
             // ROUND 0
-            ta0 = Aes.Decrypt(ta0, key0);
-            ta1 = Aes.Decrypt(ta1, key0);
-            ta2 = Aes.Decrypt(ta2, key0);
-            ta3 = Aes.Decrypt(ta3, key0);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            var block0 = Aes.Decrypt(ta0, key0);
+            block0 = Aes.InverseMixColumns(block0);
+            var block1 = Aes.Decrypt(ta1, key0);
+            block1 = Aes.InverseMixColumns(block1);
+            var block2 = Aes.Decrypt(ta2, key0);
+            block2 = Aes.InverseMixColumns(block2);
+            var block3 = Aes.Decrypt(ta3, key0);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 1
-            ta0 = Aes.Decrypt(ta0, key1);
-            ta1 = Aes.Decrypt(ta1, key1);
-            ta2 = Aes.Decrypt(ta2, key1);
-            ta3 = Aes.Decrypt(ta3, key1);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key1);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key1);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key1);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key1);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 2
-            ta0 = Aes.Decrypt(ta0, key2);
-            ta1 = Aes.Decrypt(ta1, key2);
-            ta2 = Aes.Decrypt(ta2, key2);
-            ta3 = Aes.Decrypt(ta3, key2);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key2);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key2);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key2);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key2);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 3
-            ta0 = Aes.Decrypt(ta0, key3);
-            ta1 = Aes.Decrypt(ta1, key3);
-            ta2 = Aes.Decrypt(ta2, key3);
-            ta3 = Aes.Decrypt(ta3, key3);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key3);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key3);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key3);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key3);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 4
-            ta0 = Aes.Decrypt(ta0, key4);
-            ta1 = Aes.Decrypt(ta1, key4);
-            ta2 = Aes.Decrypt(ta2, key4);
-            ta3 = Aes.Decrypt(ta3, key4);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key4);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key4);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key4);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key4);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 5
-            ta0 = Aes.Decrypt(ta0, key5);
-            ta1 = Aes.Decrypt(ta1, key5);
-            ta2 = Aes.Decrypt(ta2, key5);
-            ta3 = Aes.Decrypt(ta3, key5);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key5);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key5);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key5);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key5);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 6
-            ta0 = Aes.Decrypt(ta0, key6);
-            ta1 = Aes.Decrypt(ta1, key6);
-            ta2 = Aes.Decrypt(ta2, key6);
-            ta3 = Aes.Decrypt(ta3, key6);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key6);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key6);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key6);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key6);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 7
-            ta0 = Aes.Decrypt(ta0, key7);
-            ta1 = Aes.Decrypt(ta1, key7);
-            ta2 = Aes.Decrypt(ta2, key7);
-            ta3 = Aes.Decrypt(ta3, key7);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key7);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key7);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key7);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key7);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 8
-            ta0 = Aes.Decrypt(ta0, key8);
-            ta1 = Aes.Decrypt(ta1, key8);
-            ta2 = Aes.Decrypt(ta2, key8);
-            ta3 = Aes.Decrypt(ta3, key8);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key8);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key8);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key8);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key8);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 9
-            ta0 = Aes.Decrypt(ta0, key9);
-            ta1 = Aes.Decrypt(ta1, key9);
-            ta2 = Aes.Decrypt(ta2, key9);
-            ta3 = Aes.Decrypt(ta3, key9);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key9);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key9);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key9);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key9);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 10
-            ta0 = Aes.Decrypt(ta0, key10);
-            ta1 = Aes.Decrypt(ta1, key10);
-            ta2 = Aes.Decrypt(ta2, key10);
-            ta3 = Aes.Decrypt(ta3, key10);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key10);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key10);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key10);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key10);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 11
-            ta0 = Aes.Decrypt(ta0, key11);
-            ta1 = Aes.Decrypt(ta1, key11);
-            ta2 = Aes.Decrypt(ta2, key11);
-            ta3 = Aes.Decrypt(ta3, key11);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key11);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key11);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key11);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key11);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 12
-            ta0 = Aes.Decrypt(ta0, key12);
-            ta1 = Aes.Decrypt(ta1, key12);
-            ta2 = Aes.Decrypt(ta2, key12);
-            ta3 = Aes.Decrypt(ta3, key12);
-            ta0 = Aes.InverseMixColumns(ta0);
-            ta1 = Aes.InverseMixColumns(ta1);
-            ta2 = Aes.InverseMixColumns(ta2);
-            ta3 = Aes.InverseMixColumns(ta3);
+            block0 = Aes.Decrypt(block0, key12);
+            block0 = Aes.InverseMixColumns(block0);
+            block1 = Aes.Decrypt(block1, key12);
+            block1 = Aes.InverseMixColumns(block1);
+            block2 = Aes.Decrypt(block2, key12);
+            block2 = Aes.InverseMixColumns(block2);
+            block3 = Aes.Decrypt(block3, key12);
+            block3 = Aes.InverseMixColumns(block3);
 
             // ROUND 13 + 14
-            ta0 = Aes.Decrypt(ta0, key13);
-            ta1 = Aes.Decrypt(ta1, key13);
-            ta2 = Aes.Decrypt(ta2, key13);
-            ta3 = Aes.Decrypt(ta3, key13);
-            ta0 ^= key14;
-            ta1 ^= key14;
-            ta2 ^= key14;
-            ta3 ^= key14;
+            block0 = Aes.Decrypt(block0, key13);
+            block0 ^= key14;
+            block1 = Aes.Decrypt(block1, key13);
+            block1 ^= key14;
+            block2 = Aes.Decrypt(block2, key13);
+            block2 ^= key14;
+            block3 = Aes.Decrypt(block3, key13);
+            block3 ^= key14;
+
+            ta0 = block0;
+            ta1 = block1;
+            ta2 = block2;
+            ta3 = block3;
         }
 
         #endregion

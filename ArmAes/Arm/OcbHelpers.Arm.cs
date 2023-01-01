@@ -17,7 +17,7 @@ internal static partial class OcbHelpers
         {
             var tmp = AdvSimd.ShiftRightArithmetic(b.AsSByte(), 7);
             tmp = AdvSimd.And(tmp, DoubleMask);
-            tmp = AdvSimd. ExtractVector128(tmp, tmp, 1);
+            tmp = AdvSimd.ExtractVector128(tmp, tmp, 1);
             b = AdvSimd.ShiftLeftLogical(b, 1);
             return tmp.AsByte() ^ b;
         }
@@ -29,9 +29,9 @@ internal static partial class OcbHelpers
             ref var tmpRef = ref MemoryMarshal.GetReference(tmp);
 
             if (BitConverter.IsLittleEndian)
-                tmp[0] = (uint)(0x01000000 + ((tagLen * 8 % 128) << 1));
+                Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 0) = (uint)(0x01000000 + ((tagLen * 8 % 128) << 1));
             else
-                tmp[0] = (uint)(0x00000001 + ((tagLen * 8 % 128) << 25));
+                Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 0) = (uint)(0x00000001 + ((tagLen * 8 % 128) << 25));
 
             Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 1) = Unsafe.As<byte, uint>(ref nonce);
             Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 2) = Unsafe.Add(ref Unsafe.As<byte, uint>(ref nonce), 1);
@@ -71,9 +71,9 @@ internal static partial class OcbHelpers
             ref var tmpRef = ref MemoryMarshal.GetReference(tmp);
 
             if (BitConverter.IsLittleEndian)
-                tmp[0] = (uint)(0x01000000 + ((tagLen * 8 % 128) << 1));
+                Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 0) = (uint)(0x01000000 + ((tagLen * 8 % 128) << 1));
             else
-                tmp[0] = (uint)(0x00000001 + ((tagLen * 8 % 128) << 25));
+                Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 0) = (uint)(0x00000001 + ((tagLen * 8 % 128) << 25));
 
             Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 1) = Unsafe.As<byte, uint>(ref nonce);
             Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 2) = Unsafe.Add(ref Unsafe.As<byte, uint>(ref nonce), 1);
@@ -113,9 +113,9 @@ internal static partial class OcbHelpers
             ref var tmpRef = ref MemoryMarshal.GetReference(tmp);
 
             if (BitConverter.IsLittleEndian)
-                tmp[0] = (uint)(0x01000000 + ((tagLen * 8 % 128) << 1));
+                Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 0) = (uint)(0x01000000 + ((tagLen * 8 % 128) << 1));
             else
-                tmp[0] = (uint)(0x00000001 + ((tagLen * 8 % 128) << 25));
+                Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 0) = (uint)(0x00000001 + ((tagLen * 8 % 128) << 25));
 
             Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 1) = Unsafe.As<byte, uint>(ref nonce);
             Unsafe.Add(ref MemoryMarshal.GetReference(tmp), 2) = Unsafe.Add(ref Unsafe.As<byte, uint>(ref nonce), 1);

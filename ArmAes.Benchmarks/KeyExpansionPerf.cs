@@ -9,11 +9,11 @@ public class KeyExpansionPerf
     public KeyMode Mode { get; set; }
 
     [Benchmark]
-    public AesKey Aes128BitKeyExpansion() => new AesKey(KeyArray128, Mode);
+    public AesKey Aes128BitKeyExpansion() => new(KeyArray128, Mode);
 
     [Benchmark]
-    public AesKey Aes192BitKeyExpansion() => new AesKey(KeyArray192, Mode);
+    public AesKey Aes192BitKeyExpansion() => new(KeyArray192, Mode);
 
     [Benchmark]
-    public AesKey Aes256BitKeyExpansion() => new AesKey(KeyArray256, Mode);
+    public AesKey Aes256BitKeyExpansion() => new(KeyArray256, Mode);
 }
