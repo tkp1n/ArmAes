@@ -1,6 +1,6 @@
 namespace ArmAes.Benchmarks;
 
-public static class TestKeys
+internal static class TestKeys
 {
     internal static ReadOnlySpan<byte> KeyArray128 => new byte[]
     {

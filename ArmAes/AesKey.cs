@@ -79,45 +79,45 @@ namespace ArmAes
             {
                 if (_mode.HasFlag(KeyMode.Encrypt) && _mode.HasFlag(KeyMode.Decrypt))
                 {
-                    AesUtil.EncDecKeygen128(key, ref EncryptKeySchedule, ref DecryptKeySchedule);
+                    KeygenUtil.EncDecKeygen128(key, ref EncryptKeySchedule, ref DecryptKeySchedule);
                 }
                 else if (_mode.HasFlag(KeyMode.Encrypt))
                 {
-                    AesUtil.EncKeygen128(key, ref EncryptKeySchedule);
+                    KeygenUtil.EncKeygen128(key, ref EncryptKeySchedule);
                 }
                 else if (_mode.HasFlag(KeyMode.Decrypt))
                 {
-                    AesUtil.DecKeygen128(key, ref DecryptKeySchedule);
+                    KeygenUtil.DecKeygen128(key, ref DecryptKeySchedule);
                 }
             }
             else if (_keyLen == 24)
             {
                 if (_mode.HasFlag(KeyMode.Encrypt) && _mode.HasFlag(KeyMode.Decrypt))
                 {
-                    AesUtil.EncDecKeygen192(key, ref EncryptKeySchedule, ref DecryptKeySchedule);
+                    KeygenUtil.EncDecKeygen192(key, ref EncryptKeySchedule, ref DecryptKeySchedule);
                 }
                 else if (_mode.HasFlag(KeyMode.Encrypt))
                 {
-                    AesUtil.EncKeygen192(key, ref EncryptKeySchedule);
+                    KeygenUtil.EncKeygen192(key, ref EncryptKeySchedule);
                 }
                 else if (_mode.HasFlag(KeyMode.Decrypt))
                 {
-                    AesUtil.DecKeygen192(key, ref DecryptKeySchedule);
+                    KeygenUtil.DecKeygen192(key, ref DecryptKeySchedule);
                 }
             }
             else if (_keyLen == 32)
             {
                 if (_mode.HasFlag(KeyMode.Encrypt) && _mode.HasFlag(KeyMode.Decrypt))
                 {
-                    AesUtil.EncDecKeygen256(key, ref EncryptKeySchedule, ref DecryptKeySchedule);
+                    KeygenUtil.EncDecKeygen256(key, ref EncryptKeySchedule, ref DecryptKeySchedule);
                 }
                 else if (_mode.HasFlag(KeyMode.Encrypt))
                 {
-                    AesUtil.EncKeygen256(key, ref EncryptKeySchedule);
+                    KeygenUtil.EncKeygen256(key, ref EncryptKeySchedule);
                 }
                 else if (_mode.HasFlag(KeyMode.Decrypt))
                 {
-                    AesUtil.DecKeygen256(key, ref DecryptKeySchedule);
+                    KeygenUtil.DecKeygen256(key, ref DecryptKeySchedule);
                 }
             }
         }

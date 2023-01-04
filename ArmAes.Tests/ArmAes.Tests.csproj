@@ -24,4 +24,10 @@
       <ProjectReference Include="..\ArmAes\ArmAes.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <Content Include="GCMTestVectors\*.*">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+
 </Project>

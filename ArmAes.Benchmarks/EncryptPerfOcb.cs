@@ -4,18 +4,18 @@ using static ArmAes.Benchmarks.TestKeys;
 
 namespace ArmAes.Benchmarks;
 
-public class EncryptPerfObb
+public class EncryptPerfOcb
 {
     [Benchmark]
     public void ArmAesOcb()
     {
-        Ocb.EncryptOcb(input, output, aad, nonce, tag, AesKey);
+        Ocb.EncryptOcb(input, output, aad, nonce, tag, AesKey(KeyMode.Encrypt | KeyMode.Decrypt));
     }
 
     [Benchmark(Baseline = true)]
-    public void FrameworkGcm()
+    public void ArmAesGcm()
     {
-        frameworkGcm.Encrypt(nonce, input, output, tag, aad);
+        Gcm.EncryptGcm(input, output, aad, nonce, tag, AesKey(KeyMode.Encrypt));
     }
 
     private AesGcm frameworkGcm;
@@ -43,7 +43,7 @@ public class EncryptPerfObb
         }
     }
 
-    private AesKey AesKey => new AesKey(KeyBytes, KeyMode.Encrypt | KeyMode.Decrypt);
+    private AesKey AesKey(KeyMode mode) => new(KeyBytes, mode);
 
     [GlobalSetup]
     public void Setup()
