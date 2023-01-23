@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArmAes.Tests", "ArmAes.Test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArmAes.Benchmarks", "ArmAes.Benchmarks\ArmAes.Benchmarks.csproj", "{3AE1138C-CB5C-4A9B-96CB-4D2FB91F8D55}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Playground", "Playground\Playground.csproj", "{1A1FFD05-1E24-4D7A-901B-D151492C6803}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{3AE1138C-CB5C-4A9B-96CB-4D2FB91F8D55}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3AE1138C-CB5C-4A9B-96CB-4D2FB91F8D55}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3AE1138C-CB5C-4A9B-96CB-4D2FB91F8D55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A1FFD05-1E24-4D7A-901B-D151492C6803}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A1FFD05-1E24-4D7A-901B-D151492C6803}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A1FFD05-1E24-4D7A-901B-D151492C6803}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A1FFD05-1E24-4D7A-901B-D151492C6803}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

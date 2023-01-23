@@ -13,6 +13,10 @@ namespace ArmAes
             => throw new ArgumentNullException(argument);
 
         [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException(string argument)
+            => throw new ArgumentOutOfRangeException(argument);
+
+        [DoesNotReturn]
         public static T ThrowUnknownKeySizeException<T>(string argument, int keyLength)
             => throw new ArgumentOutOfRangeException(argument, $"Key size not supported: ${keyLength}");
     }

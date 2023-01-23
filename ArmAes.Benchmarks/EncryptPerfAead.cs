@@ -4,7 +4,7 @@ using static ArmAes.Benchmarks.TestKeys;
 
 namespace ArmAes.Benchmarks;
 
-public class EncryptPerfOcb
+public class EncryptPerfAead
 {
     [Benchmark]
     public void ArmAesOcb()

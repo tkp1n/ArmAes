@@ -20,6 +20,7 @@ internal readonly ref struct OcbContext
         if (maxLen != 0)
             lCount =  31 - int.LeadingZeroCount(maxLen);
 
+        // TODO: maybe not allocate on the heap....
         _lstar = GC.AllocateUninitializedArray<byte>(16);
         _ldollar = GC.AllocateUninitializedArray<byte>(16);
         _l = GC.AllocateUninitializedArray<byte>(16 * lCount);

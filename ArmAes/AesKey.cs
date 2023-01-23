@@ -72,7 +72,7 @@ namespace ArmAes
         {
             if (key.Length != _keyLen)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(key));
+                ThrowHelper.ThrowArgumentOutOfRangeException(nameof(key));
             }
 
             if (_keyLen == 16)
