@@ -68,7 +68,7 @@ public static partial class Gcm
     {
         if (tag.Length > 16)
         {
-            throw null;
+            ThrowHelper.ThrowArgumentOutOfRangeException(nameof(tag));
         }
 
         Span<byte> refTag = stackalloc byte[16];

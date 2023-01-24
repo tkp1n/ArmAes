@@ -6,20 +6,6 @@ namespace ArmAes;
 public static partial class XtsUtil
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Vector128<byte> AddOne(Vector128<byte> input)
-    {
-        if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported)
-        {
-            return Arm.AddOne(input);
-        }
-        else
-        {
-            ThrowHelper.ThrowPlatformNotSupportedException();
-            return default;
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector128<byte> XtsMulAlpha(Vector128<byte> input)
     {
         if (System.Runtime.Intrinsics.Arm.AdvSimd.IsSupported)

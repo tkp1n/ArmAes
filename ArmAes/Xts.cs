@@ -46,6 +46,36 @@ public static partial class Xts
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static nuint PrepareTweaks(ReadOnlySpan<byte> iv, nuint dataUnits, nuint remainder, Span<byte> tweaks)
+    {
+        ref var ivRef = ref MemoryMarshal.GetReference(iv);
+        ref var tweakRef = ref MemoryMarshal.GetReference(tweaks);
+
+        var tweakRounds = dataUnits;
+        if (remainder != 0) tweakRounds++;
+        if (tweakRounds * BytesPerBlock > (nuint)tweaks.Length)
+            ThrowHelper.ThrowArgumentOutOfRangeException(nameof(dataUnits));
+
+        nuint tweakBytes = 0;
+        var a = Unsafe.AddByteOffset(ref Unsafe.As<byte, long>(ref ivRef), 0);
+        var b = Unsafe.AddByteOffset(ref Unsafe.As<byte, long>(ref ivRef), 8);
+
+        while (tweakRounds-- > 0)
+        {
+            Unsafe.AddByteOffset(ref Unsafe.As<byte, long>(ref tweakRef), 0) = a;
+            Unsafe.AddByteOffset(ref Unsafe.As<byte, long>(ref tweakRef), 8) = b;
+
+            var aInc = a + 1;
+            if (aInc < a) b++;
+            a = aInc;
+
+            tweakBytes += BytesPerBlock;
+        }
+
+        return tweakBytes;
+    }
+
     private static void EncryptXts256(
         ReadOnlySpan<byte> input,
         Span<byte> output,
@@ -55,23 +85,13 @@ public static partial class Xts
     {
         Span<byte> tweaks = stackalloc byte[(int)(ParallelTweaks * BytesPerBlock)];
         ref var tweakRef = ref MemoryMarshal.GetReference(tweaks);
-        var ivVec = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(iv));
 
         var ptLen = (nuint)input.Length;
         var (dataUnits, remainder) = Math.DivRem(ptLen, dataUnitLen);
-        var tweakRounds = dataUnits;
-        if (remainder != 0) tweakRounds++;
-        if (tweakRounds > ParallelTweaks) ThrowHelper.ThrowArgumentOutOfRangeException(nameof(input));
 
-        nuint tweakBytes = 0;
-        while (tweakRounds-- > 0)
-        {
-            ivVec.StoreUnsafe(ref tweakRef, tweakBytes);
-            ivVec = XtsUtil.AddOne(ivVec);
-            tweakBytes += BytesPerBlock;
-        }
+        var tweakBytes = PrepareTweaks(iv, dataUnits, remainder, tweaks);
 
-        Ecb.EncryptEcb256(keys.Key2, ref tweakRef, tweakBytes, ref tweakRef);
+        Ecb.EncryptEcb256(keys.Key2, tweaks[..(int)tweakBytes], tweaks);
 
         ref var pt = ref MemoryMarshal.GetReference(input);
         ref var ct = ref MemoryMarshal.GetReference(output);
@@ -108,23 +128,13 @@ public static partial class Xts
     {
         Span<byte> tweaks = stackalloc byte[(int)(ParallelTweaks * BytesPerBlock)];
         ref var tweakRef = ref MemoryMarshal.GetReference(tweaks);
-        var ivVec = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(iv));
 
         var ptLen = (nuint)input.Length;
         var (dataUnits, remainder) = Math.DivRem(ptLen, dataUnitLen);
-        var tweakRounds = dataUnits;
-        if (remainder != 0) tweakRounds++;
-        if (tweakRounds > ParallelTweaks) ThrowHelper.ThrowArgumentOutOfRangeException(nameof(input));
 
-        nuint tweakBytes = 0;
-        while (tweakRounds-- > 0)
-        {
-            ivVec.StoreUnsafe(ref tweakRef, tweakBytes);
-            ivVec = XtsUtil.AddOne(ivVec);
-            tweakBytes += BytesPerBlock;
-        }
+        var tweakBytes = PrepareTweaks(iv, dataUnits, remainder, tweaks);
 
-        Ecb.EncryptEcb128(keys.Key2, ref tweakRef, tweakBytes, ref tweakRef);
+        Ecb.EncryptEcb128(keys.Key2, tweaks[..(int)tweakBytes], tweaks);
 
         ref var pt = ref MemoryMarshal.GetReference(input);
         ref var ct = ref MemoryMarshal.GetReference(output);
@@ -197,23 +207,13 @@ public static partial class Xts
     {
         Span<byte> tweaks = stackalloc byte[(int)(ParallelTweaks * BytesPerBlock)];
         ref var tweakRef = ref MemoryMarshal.GetReference(tweaks);
-        var ivVec = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(iv));
 
         var ctLen = (nuint)input.Length;
         var (dataUnits, remainder) = Math.DivRem(ctLen, dataUnitLen);
-        var tweakRounds = dataUnits;
-        if (remainder != 0) tweakRounds++;
-        if (tweakRounds > ParallelTweaks) ThrowHelper.ThrowArgumentOutOfRangeException(nameof(input));
 
-        nuint tweakBytes = 0;
-        while (tweakRounds-- > 0)
-        {
-            ivVec.StoreUnsafe(ref tweakRef, tweakBytes);
-            ivVec = XtsUtil.AddOne(ivVec);
-            tweakBytes += BytesPerBlock;
-        }
+        var tweakBytes = PrepareTweaks(iv, dataUnits, remainder, tweaks);
 
-        Ecb.EncryptEcb256(keys.Key2, ref tweakRef, tweakBytes, ref tweakRef);
+        Ecb.EncryptEcb256(keys.Key2, tweaks[..(int)tweakBytes], tweaks);
 
         ref var ct = ref MemoryMarshal.GetReference(input);
         ref var pt = ref MemoryMarshal.GetReference(output);
@@ -250,23 +250,13 @@ public static partial class Xts
     {
         Span<byte> tweaks = stackalloc byte[(int)(ParallelTweaks * BytesPerBlock)];
         ref var tweakRef = ref MemoryMarshal.GetReference(tweaks);
-        var ivVec = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(iv));
 
-        var ctLen = (nuint)input.Length;
-        var (dataUnits, remainder) = Math.DivRem(ctLen, dataUnitLen);
-        var tweakRounds = dataUnits;
-        if (remainder != 0) tweakRounds++;
-        if (tweakRounds > ParallelTweaks) ThrowHelper.ThrowArgumentOutOfRangeException(nameof(input));
+        var ptLen = (nuint)input.Length;
+        var (dataUnits, remainder) = Math.DivRem(ptLen, dataUnitLen);
 
-        nuint tweakBytes = 0;
-        while (tweakRounds-- > 0)
-        {
-            ivVec.StoreUnsafe(ref tweakRef, tweakBytes);
-            ivVec = XtsUtil.AddOne(ivVec);
-            tweakBytes += BytesPerBlock;
-        }
+        var tweakBytes = PrepareTweaks(iv, dataUnits, remainder, tweaks);
 
-        Ecb.EncryptEcb128(keys.Key2, ref tweakRef, tweakBytes, ref tweakRef);
+        Ecb.EncryptEcb128(keys.Key2, tweaks[..(int)tweakBytes], tweaks);
 
         ref var ct = ref MemoryMarshal.GetReference(input);
         ref var pt = ref MemoryMarshal.GetReference(output);

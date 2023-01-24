@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -11,18 +12,6 @@ public static partial class XtsUtil
     {
         private static readonly Vector128<sbyte> AlphaMask = Vector128.Create(0x87, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1).AsSByte();
         private static readonly Vector64<byte> AlphaMultiplier = Vector64.Create((long)0x0000000000000086).AsByte();
-        private static readonly Vector128<ulong> One = Vector128.Create(1ul, 0);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<byte> AddOne(Vector128<byte> input)
-        {
-            var tmp = AdvSimd.Add(input.AsUInt64(), One);
-            var cmp = AdvSimd.Arm64.CompareLessThan(tmp, input.AsUInt64());
-            var carry = AdvSimd.ExtractVector128(Vector128<ulong>.Zero, cmp, 1);
-            carry = AdvSimd.ShiftRightLogical(carry, 63);
-
-            return AdvSimd.Add(tmp, carry).AsByte();
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<byte> XtsMulAlpha(Vector128<byte> input)

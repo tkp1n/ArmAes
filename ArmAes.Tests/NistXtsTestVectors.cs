@@ -1,21 +1,11 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace ArmAes.Tests;
 
 public class NistXtsTestVectors
 {
-    private readonly ITestOutputHelper _output;
-
-    public NistXtsTestVectors(ITestOutputHelper output)
-    {
-        _output = output;
-    }
-
     public static IEnumerable<object[]> GetTestVectors()
     {
         foreach (var file in Directory.EnumerateFiles(Path.Combine(Directory.GetCurrentDirectory(), "XTSTestVectors"), "*.rsp", SearchOption.AllDirectories))
@@ -91,12 +81,6 @@ public class NistXtsTestVectors
             else
             {
                 Xts.DecryptXts(testSet.Ciphertext, actualPt, testSet.DataUnitSeqNumber, key, testSet.DataUnitLen / 8);
-            }
-
-            if (!testSet.Plaintext.SequenceEqual(actualPt))
-            {
-                _output.WriteLine(Convert.ToHexString(testSet.Plaintext));
-                _output.WriteLine(Convert.ToHexString(actualPt));
             }
 
             Assert.Equal(testSet.Plaintext, actualPt);
